@@ -1,3 +1,10 @@
+'''
+browser
+-------
+
+
+'''
+
 import logging
 import pandas as pd
 from pyvirtualdisplay import Display
@@ -8,7 +15,6 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions
 
 class SelfClosingBrowser(webdriver.Firefox):
-
     """ Initialise constants, Firefox download settings and start up 
     the webdriver and display.
     """
@@ -30,20 +36,22 @@ class SelfClosingBrowser(webdriver.Firefox):
         if top_url is not None:
             self.get(top_url)
         
-    '''Dummy method for with'''
     def __enter__(self):
+        '''Dummy method for with'''
         return self
 
-    """ Close and stop driver and display. This is particularly important in 
-    the event of a failure in 'get_chd'.
-    """        
     def __exit__(self, type, value, traceback):
+        """ Close and stop driver and display. This is particularly important in 
+        the event of a failure in 'get_chd'.
+        """        
         self.close()
         self.display.stop()
         logging.info("\tClosed and stopped driver and display")
         
 
     def find_and_click_link(self,text):
+        '''
+        '''
         all_texts = []
         for link in self.find_elements_by_tag_name('a'):
             all_texts.append(link.text)
@@ -54,21 +62,25 @@ class SelfClosingBrowser(webdriver.Firefox):
         return False
 
     def get(self,url):
+        '''
+        '''
         logging.info("\tGoing to %s",url)
         result = super().get(url)
         time.sleep(self.load_time)
         return result
 
     def wait_for_presence_by_id(self,name):
+        '''
+        '''
         logging.debug("\tWaiting for %s",name)
         by = (By.ID,name)
         condition = expected_conditions.presence_of_element_located(by)
         return WebDriverWait(self,self.load_time).until(condition)        
 
     def get_pandas_table_by_id(self,table_id):
+        '''
+        '''
         table = self.wait_for_presence_by_id(table_id)
         html = table.get_attribute('outerHTML')
         df = pd.read_html(html,header=0)[0]
         return table,df
-            
-
