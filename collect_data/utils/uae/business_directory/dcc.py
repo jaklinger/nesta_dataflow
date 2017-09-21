@@ -2,23 +2,18 @@
 dcc
 ----
 
-
 '''
 
 from bs4 import BeautifulSoup
 import logging
 import pandas as pd
+
 import requests
-from sqlalchemy.engine.url import URL
-from sqlalchemy import create_engine
-from sqlalchemy.sql.expression import insert as sql_insert
-from sqlalchemy.sql.expression import text as sql_text
-from sqlalchemy.schema import Table
-from sqlalchemy.schema import MetaData
 import time
 
 # Local imports
-from utils.browser.browser import SelfClosingBrowser
+from utils.common.browser import SelfClosingBrowser
+from utils.common.datapipeline import DataPipeline
 
 ''''''
 def get_field_from_box(field,box):
@@ -58,7 +53,7 @@ def get_response_from_url(url,max_tries=3):
 def run(config):
 
     # Fire up a browser at the top url
-    top_url = "http://www.dcciinfo.com/categories"
+    top_url = config["parameters"]["src"]
     cat_pages = {}
     with SelfClosingBrowser(top_url=top_url) as b:
         # Scrape pages until no page found
@@ -101,20 +96,9 @@ def run(config):
                 data[company_name]["category"].append(cat)    
     logging.info("\tGot %s rows",len(data))
     
-    # Connect to the database
-    db_cnf = URL(drivername='mysql+pymysql',
-                 query={'read_default_file':config["DEFAULT"]["tier-0.cnf"]})
-    engine = create_engine(name_or_url=db_cnf)
-    conn = engine.connect()
-
-    # Hook to the table
+    # Write data
     logging.info("\tWriting to table")
-    metadata = MetaData(bind=engine)
-    table = Table(sql_text('dubai_business_directory'),metadata,
-                  autoload=True,mysql_charset='utf8')
-    
-    # Insert data into table
-    for _,row in data.items():
-        row["category"] = ";".join(row["category"]) # Pretty hacky
-        conn.execute(sql_insert(table).prefix_with("IGNORE").values(**row))
-    conn.close()
+    with DataPipeline(config) as dp:
+        for _,row in data.items():
+            row["category"] = ";".join(row["category"]) # Pretty hacky
+            dp.insert(row)
