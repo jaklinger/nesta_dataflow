@@ -1,6 +1,6 @@
 #!/bin/bash
 
-#---- My AWS settings
+# My AWS settings
 MYID="377767275214"
 REGION="eu-west-1"
 PROFILE="default"
@@ -8,18 +8,18 @@ ROLE="nesta-innovation-mapping"
 BUCKET="nesta-datapipeline"
 alias aws=/Users/hep/.local/bin/aws
 
-#---- Default values
+# Default values
 DESCRIPTION="No description given"
 MODE="INVOKE"
 REFRESH="NO"
 REFRESH_ENV="NO"
 DRYRUN="NO"
 
-#---- Required values
+# Required values
 SCRIPT="REQUIRED"
 SCRIPTPATH="REQUIRED"
 
-#---- Command line arguments
+# Command line arguments
 POSITIONAL=()
 while [[ $# -gt 0 ]]
 do
@@ -64,7 +64,7 @@ do
 done
 set -- "${POSITIONAL[@]}" # restore positional parameters     
 
-#---- Shame the user for not providing key parameters
+# Shame the user for not providing key parameters
 if [[ $SCRIPTPATH == "REQUIRED" ]];
 then
     if [[ $REFRESH == "YES" ]];
@@ -79,24 +79,24 @@ then
     return 1
 fi
 
-#---- My settings
+# My settings
 FUNCTION_NAME="DataPipeline-${SCRIPT}"
 HANDLER="${SCRIPT}.run"
 DESCRIPTION="${DESCRIPTION}"
 
-#---- My organisation's settings
+# My organisation's settings
 TIMEOUT=300
 MEMORY_SIZE=512
 ROLE="arn:aws:iam::${MYID}:role/${ROLE}"
 
-#---- My lambda schedule settings
+# My lambda schedule settings
 SCHEDULE_EXPR="rate(5 minutes)"
 SCHEDULE_RULE=$FUNCTION_NAME"-Schedule"
 SCHEDULE_RULE_ID=1
 SOURCE_ARN="arn:aws:events:$REGION:$MYID:rule/$SCHEDULE_RULE"
 TARGETS="{\"Id\" : \"$SCHEDULE_RULE_ID\", \"Arn\": \"arn:aws:lambda:$REGION:$MYID:function:$FUNCTION_NAME\"}"
 
-#---- My IO/OS settings
+# My IO/OS settings
 OUTLOG="outputfile.txt"
 TOPDIR="$PWD"
 ZIPFILE="DataPipeline-${SCRIPT}.zip"
@@ -104,7 +104,7 @@ ENVDIR="$TOPDIR/env"
 ENVZIP="${SCRIPT}.zip"    
 
 #__________________________
-#---- Prepare the zip file
+# Prepare the zip file
 function PREPARE_ZIP {
     echo "Zipping up files"
     
@@ -117,7 +117,7 @@ function PREPARE_ZIP {
 }
 
 #__________________________
-#---- Delete the function
+# Delete the function
 function DELETE_FUNCTION {
     echo "Deleting function "$FUNCTION_NAME &&
     aws lambda delete-function \
@@ -127,7 +127,7 @@ function DELETE_FUNCTION {
 }
 
 #__________________________
-#---- Create the function
+# Create the function
 function CREATE_FUNCTION {
     echo "Creating function "$FUNCTION_NAME
     aws lambda create-function \
@@ -144,7 +144,7 @@ function CREATE_FUNCTION {
 }
 
 #__________________________
-#---- Invoke function according to a schedule
+# Invoke function according to a schedule
 function FUNCTION_EXISTS {
     echo "Checking whether "$FUNCTION_NAME" exists"
     aws lambda get-function \
@@ -157,7 +157,7 @@ function FUNCTION_EXISTS {
 }
 
 #__________________________
-#---- Invoke the function
+# Invoke the function
 function INVOKE_FUNCTION {
     echo "Invoking "$FUNCTION_NAME &&
     aws lambda invoke \
@@ -177,7 +177,7 @@ function INVOKE_FUNCTION {
 }
 
 #__________________________
-#---- Invoke function according to a schedule
+# Invoke function according to a schedule
 function SCHEDULE_FUNCTION {
     echo "Adding permissions to function "$FUNCTION_NAME &&
     aws lambda add-permission \
@@ -203,6 +203,8 @@ function SCHEDULE_FUNCTION {
 	--targets "$TARGETS"
 }
 
+#__________________________
+# Create AWS environment from docker image
 function CREATE_ENVIRONMENT(){
 
     CONTAINER_NAME="tmp_docker"
@@ -226,56 +228,28 @@ function CREATE_ENVIRONMENT(){
     cd $TOPDIR
     mv $SCRIPTPATH/venv.zip $ENVDIR/$ENVZIP    
     rm $SCRIPTPATH/full-venv.zip 
-    
-    # # Create the environment if it doesn't already exist
-    # echo "Attempting to create a conda environment called $SCRIPT..."
-    # conda create python=3.6 --name $SCRIPT &> _RESULT
-    # RESULT=$(cat _RESULT)
-    # rm _RESULT    
-    # if [[ $RESULT == *"prefix already exists"* ]];
-    # then
-    # 	echo "Environment $SCRIPT already exists"
-    # else
-    #     echo "Created environment $SCRIPT"
-    # fi
-    
-    # # Activate the environment
-    # source activate $SCRIPT
-
-    # # Generate a requirements file
-    # pip install pipreqs &> /dev/null
-    # pipreqs --force $TOPDIR/$SCRIPTPATH
-    # # Use the requirements to build an environment
-    # while read PKGNAME; do
-    # 	_PKGNAME=$(echo $PKGNAME | awk -F== '{print $1}')
-    # 	echo "Installing "$_PKGNAME
-    # 	yes | pip install $PKGNAME
-    # 	# conda install --yes $_PKGNAME &> _RESULT
-    # 	# RESULT=$(cat _RESULT)
-    # 	# rm _RESULT
-    # 	# if [[ $RESULT == *"PackageNotFoundError"* ]];
-    # 	# then
-    # 	#     echo "Couldn't find the package in conda"
-    # 	#     echo "Trying pip..."
-    # 	#     yes | pip install $PKGNAME
-    # 	# fi	
-    # done < $TOPDIR/$SCRIPTPATH/requirements.txt
-    # rm $TOPDIR/$SCRIPTPATH/requirements.txt    
-
-    # pip install numpy
-    
-    # # Zip up the environment
-    # PYTHONBIN=$(echo $PATH | cut -d: -f1)
-    # PYTHONLIB=$(ls -d ${PYTHONBIN}/../lib/python*/site-packages/)
-    # cd $PYTHONLIB
-    # zip -r $ENVDIR/$ENVZIP * &> /dev/null
+    rm $SCRIPTPATH/build.sh
 }
 
+
+#__________________________
+# Deploy the environment to S3
 function DEPLOY_ZIP(){
+    # Check the file size
+    TOTAL_SIZE=$(unzip -l $TOPDIR/$ZIPFILE | tail -n1 | head -n1 | awk '{print $1;}')
+    if [[ $TOTAL_SIZE -gt 262144000 ]];
+    then
+	echo -e "Error:\tZip file exceeds AWS Lambda restrictions";
+	return 1
+    fi
+    # Deploy
     echo "Deploying new environment"
     aws s3 cp $TOPDIR/$ZIPFILE s3://$BUCKET --profile $PROFILE || return 1
-    rm $TOPDIR/$ZIPFILE    
+    rm $TOPDIR/$ZIPFILE
 }
+
+#__________________________
+# MAIN
 
 # If function needs to be recreated
 FUNCTION_EXISTS

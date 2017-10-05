@@ -1,7 +1,7 @@
 import numpy as np
 import pandas as pd
-from scipy.stats import norm
 from fuzzywuzzy import fuzz
+import scipy
 
 def run(event,context):
     print("hello, joel")
