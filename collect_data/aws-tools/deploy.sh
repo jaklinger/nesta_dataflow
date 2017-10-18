@@ -9,6 +9,7 @@ BUCKET="nesta-datapipeline"
 alias aws=/Users/hep/.local/bin/aws
 
 # Default values
+CONFIG=""
 DESCRIPTION="No description given"
 MODE="INVOKE"
 REFRESH="NO"
@@ -36,9 +37,15 @@ do
 	    shift # past argument
 	    shift # past value
 	    ;;
+	-c|--config)
+	    CONFIG="$2"
+	    shift # past argument
+	    shift # past value
+	    ;;
 	-d|--description)
 	    DESCRIPTION="$2"
 	    shift # past argument
+	    shift # past value	    
 	    ;;
 	-r|--refresh)
 	    REFRESH="YES"
@@ -220,6 +227,16 @@ function CREATE_ENVIRONMENT(){
     # Copy the build script
     cp $TOPDIR/aws-tools/build.sh $SCRIPTPATH
     cd $SCRIPTPATH
+
+    # If there are config files, apply before/after replacements
+    BEFORE=""
+    echo $CONFIG
+    if [[ $CONFIG != "" ]];
+    then
+	echo "Copying precommands"
+	cp $TOPDIR/$CONFIG/before.sh . &> /dev/null
+	cp $TOPDIR/$CONFIG/after.sh . &> /dev/null
+    fi
     
     # Create and run the docker
     echo "Running the container build..."
@@ -229,6 +246,8 @@ function CREATE_ENVIRONMENT(){
     mv $SCRIPTPATH/venv.zip $ENVDIR/$ENVZIP    
     rm $SCRIPTPATH/full-venv.zip 
     rm $SCRIPTPATH/build.sh
+    rm $SCRIPTPATH/before.sh &> /dev/null
+    rm $SCRIPTPATH/after.sh &> /dev/null
 }
 
 

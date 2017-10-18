@@ -2,7 +2,6 @@
 browser
 -------
 
-
 '''
 
 import logging
@@ -24,7 +23,7 @@ class SelfClosingBrowser(webdriver.Chrome):
     def __init__(self,top_url=None,
                  visible=0,display_size=(800,600),
                  load_time=1.5,**kwargs):
-        self.load_time = load_time
+        #self.load_time = load_time
         
         # Prepare Firefox download settings
         # fp = webdriver.FirefoxProfile()
@@ -41,7 +40,7 @@ class SelfClosingBrowser(webdriver.Chrome):
         chrome_options.add_argument("--headless")
         super().__init__("/Users/hep/Downloads/chromedriver",
                          chrome_options=chrome_options)
-        
+        #self.implicitly_wait(load_time)
         if top_url is not None:
             self.get(top_url)
         
@@ -70,12 +69,12 @@ class SelfClosingBrowser(webdriver.Chrome):
                     self.get(url)
                 else:
                     link.click()
-                    time.sleep(self.load_time)
+                    #time.sleep(self.load_time)
                 return True
         return False
 
-    @retry(wait_exponential_multiplier=5000,stop_max_attempt_number=2,
-           wrap_exception=True)
+    #@retry(wait_exponential_multiplier=5000,stop_max_attempt_number=2,
+    #       wrap_exception=True)
     def get(self,url):
         '''
         '''
@@ -109,3 +108,9 @@ class SelfClosingBrowser(webdriver.Chrome):
         df = pd.read_html(html,header=0)[0]
         timer.stamp("Converted to pandas")
         return table,df
+
+if __name__ == "__main__":
+    
+    with SelfClosingBrowser() as driver:
+        driver.get("http://www.pi.ac.ae/en")
+        pass

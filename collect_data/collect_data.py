@@ -24,8 +24,8 @@ if __name__ == "__main__":
 
     # Process arguments
     parser = argparse.ArgumentParser(description='Process some integers.')
-    parser.add_argument('--specific', type=str, nargs='*', default=None,
-                        help='Specific configs to run.')
+    parser.add_argument('--config', type=str, nargs='*', default=None,
+                        help='Specific configs to run.',required=True)
     parser.add_argument("-v", "--verbose", help="increase output verbosity",
                         action="store_true", default=False)
     args = parser.parse_args()
@@ -57,22 +57,17 @@ if __name__ == "__main__":
     configs = []
     valid_configs = [f for f in os.listdir("config")
                      if f.endswith(".config")]
-    # If arguments have been specified
-    if args.specific is not None:
-        # Check each specific config exists
-        for specific_conf in args.specific:
-            found = False
-            for f in valid_configs:
-                prefix = os.path.splitext(f)[0]
-                if prefix == specific_conf:
-                    configs.append(f)
-                    found = True
-                    break
-            if not found:
-                raise IOError("No config matching "+specific_conf+" found.")
-    # Otherwise use every valid config
-    else:
-        configs = valid_configs
+    # Check each specific config exists
+    for specific_conf in args.config:
+        found = False        
+        for f in valid_configs:
+            prefix = os.path.splitext(f)[0]
+            if prefix == specific_conf:
+                configs.append(f)
+                found = True
+                break
+        if not found:
+            raise IOError("No config matching "+specific_conf+" found.")
             
     # Iterate through files in the directory 'config'
     for file_name in configs:
@@ -99,7 +94,7 @@ if __name__ == "__main__":
         logging.info("\tThis config file maps to %s",(_path_to_module))
         # Load the module
         spec = importlib.util.spec_from_file_location(_module_name,_path_to_module)
-        module = importlib.util.module_from_spec(spec)
+        module = importlib.util.module_from_spec(spec)               
         spec.loader.exec_module(module)
         # Run the function "run" with _settings
         logging.info("\tExecuting %s.run()...",(_module_name.rstrip(".py")))

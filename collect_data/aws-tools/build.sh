@@ -5,6 +5,7 @@ VENV_BUILD_DIR=/aws_test/
 function BASE_INSTALL(){
     yum update -y
     yum install -y \
+	sudo \
 	atlas-devel \
 	atlas-sse3-devel \
 	blas-devel \
@@ -13,8 +14,11 @@ function BASE_INSTALL(){
 	lapack-devel \
 	python36-devel \
 	python36-virtualenv \
+	make \
 	findutils \
-	zip
+	zip \
+	bzip2 \
+	which
 }
 
 function GENERATE_VIRTUALENV() {
@@ -62,8 +66,19 @@ function STRIP_VIRTUALENV () {
     echo "venv compressed size $(du -sh /outputs/full-venv.zip | cut -f1)"
 }
 
+function EXECUTE_IF_EXISTS () {
+    if [ -f /outputs/$1 ]; then
+	source /outputs/$1
+    else
+	echo "$1 not found"
+	ls /outputs/
+    fi
+}
+
 BASE_INSTALL
+EXECUTE_IF_EXISTS before.sh
 GENERATE_VIRTUALENV
 INSTALL_REQUIREMENTS
 COPY_SHARED_LIBS
+EXECUTE_IF_EXISTS after.sh
 STRIP_VIRTUALENV

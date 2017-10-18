@@ -145,6 +145,9 @@ def run(config):
     stops = [x for x,count in Counter(stops).most_common() if count > n]
     logging.info("\tWill ignore any of %s most common words.",len(stops))
 
+    print(stops)
+    return
+    
     # Get connection to previously acquired data
     out_db_cnf = URL(drivername="mysql+pymysql",
                  query={'read_default_file':config["DEFAULT"][output_db]})
