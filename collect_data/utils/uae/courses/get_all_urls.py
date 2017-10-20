@@ -15,7 +15,7 @@ from selenium.webdriver.support import expected_conditions
 class Crawler:
     '''
     '''
-    def __init__(self,top_url=None,max_depth=4,
+    def __init__(self,top_url=None,max_depth=4,bad_words=[],
                  driver=None,wait_condition=""):
         #print(driver)
         # Crawler settings
@@ -25,6 +25,7 @@ class Crawler:
         self.logger = logging.getLogger(__name__)
         self.top_url = top_url
         self.current_url = self.top_url
+        self.bad_words = bad_words
         
         # Record the top URL stub, in order to identify external sites
         parse_result = urlparse(self.top_url)
@@ -88,10 +89,13 @@ class Crawler:
         
         # Get the request text (not using r.text since
         # PDF and binary files hang on r.text call)
-        if any(self.current_url.endswith(x)
+        if any(self.current_url.lower().endswith(x)
                for x in ("pdf","jpg","jpeg")):
             return False
 
+        if any(w.lower() in self.current_url.lower() for w in self.bad_words):
+            return False
+        
         # Add the page to the list of "good" URLs
         #if "raduat" in self.current_url:
         print("\t"*depth,">>> Got",self.current_url)#,"from",parent_url)
@@ -104,7 +108,7 @@ class Crawler:
         for a in anchors:
             # If not a link, skip
             if "href" not in a.attrs:
-                continue            
+                continue
             # Ignore '#' fragments or internal links
             link_url = urldefrag(a["href"])[0].rstrip("/")
             if not link_url:
@@ -112,7 +116,9 @@ class Crawler:
             if link_url == self.current_url or link_url.strip() == '':
                 continue
             if link_url.startswith("mailto") or link_url.startswith("tel"):
-                continue            
+                continue
+            if any(w.lower() in link_url.lower() for w in self.bad_words):
+                continue
             # Ignore external links
             parse_result = urlparse(link_url)
             if parse_result.netloc != '':
@@ -140,19 +146,20 @@ def run(config):
     
     # Instantiate the crawler
     top_url = config["parameters"]["top_url"]
+    bad_words = config["parameters"]["bad_words"].split(",")
 
     # Run with browser
     if config["parameters"]["selenium"] == "True":
         print("Running in selenium mode")
         with SelfClosingBrowser(load_time=10) as driver:
-            crawler = Crawler(top_url=top_url,
+            crawler = Crawler(top_url=top_url,bad_words=bad_words,
                               max_depth=int(config["parameters"]["max_depth"]),
                               driver=driver,
                               wait_condition=config["parameters"]["wait_condition"]) #'//*[@id="navbar"]/ul/li[1]/a'
             crawler.crawl()
     # Run with browser
     else:
-        crawler = Crawler(top_url=top_url,
+        crawler = Crawler(top_url=top_url,bad_words=bad_words,                          
                           max_depth=int(config["parameters"]["max_depth"]))
         crawler.crawl()
 

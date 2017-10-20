@@ -1,24 +1,29 @@
-import requests
+
 from bs4 import BeautifulSoup
 
+from utils.common.browser import SelfClosingBrowser
 from utils.common.nlp import tokenize_alphanum
 from utils.common.datapipeline import DataPipeline
 
 def run(config):
-    r = requests.get(config["parameters"]["src"])
-    ucas = []
-    soup = BeautifulSoup(r.text,"lxml")
-    for a in soup.find_all("a"):
-        if "href" not in a.attrs:
-            continue
-        if not a.attrs["href"].startswith("/subject/"):
-            continue
-        words = [w for w in tokenize_alphanum(a.text)]
-        ucas.append(" ".join(words))
+    top_url = config["parameters"]["src"]
+    ucas = set()
+    with SelfClosingBrowser(top_url=top_url,load_time=10) as driver:
+        while True:
+            results = driver.find_elements_by_class_name("course-details")
+            for r in results:
+                words = [w for w in tokenize_alphanum(r.text)]
+                ucas.add(" ".join(words))
+            button = driver.find_element_by_class_name('pagination__link--next')
+            disabled = button.get_attribute("disabled")
+            if disabled is not None:
+                break
+            button.click()
 
+    print("Got",len(ucas))
     # Write data
-    logging.info("\tWriting to table")
     with DataPipeline(config) as dp:
-        for words in ucas:            
+        for words in ucas:
+            print("\t",words)
             dp.insert(dict(words=words))
             

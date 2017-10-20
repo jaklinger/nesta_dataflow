@@ -20,7 +20,7 @@ class SelfClosingBrowser(webdriver.Chrome):
     """ Initialise constants, Firefox download settings and start up 
     the webdriver and display.
     """
-    def __init__(self,top_url=None,
+    def __init__(self,top_url=None,headless=True,
                  visible=0,display_size=(800,600),
                  load_time=1.5,**kwargs):
         #self.load_time = load_time
@@ -37,10 +37,11 @@ class SelfClosingBrowser(webdriver.Chrome):
         #super().__init__()#firefox_profile=fp)
 
         chrome_options = webdriver.ChromeOptions()
-        chrome_options.add_argument("--headless")
+        if headless:
+            chrome_options.add_argument("--headless")
         super().__init__("/Users/hep/Downloads/chromedriver",
                          chrome_options=chrome_options)
-        #self.implicitly_wait(load_time)
+        self.implicitly_wait(load_time)
         if top_url is not None:
             self.get(top_url)
         

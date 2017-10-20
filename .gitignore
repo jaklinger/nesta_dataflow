@@ -9,6 +9,7 @@ bak*
 [#]*[#]
 test*
 logs/
+*sv
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

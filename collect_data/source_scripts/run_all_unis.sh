@@ -45,7 +45,8 @@ do
     # 	i=0	
     # fi
 
-    gtimeout -s KILL 70m python collect_data.py --config uae_courses #&> logs/output-$i.out &	
+    #gtimeout -s KILL 90m
+    python collect_data.py --config uae_courses #&> logs/output-$i.out &	
     
     sed -i .bak "s,top_url = $url,top_url = TOP_URL,g" config/uae_courses.config
     sed -i .bak "s,selenium = $SELENIUM,selenium = False,g" config/uae_courses.config
