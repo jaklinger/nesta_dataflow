@@ -3,7 +3,9 @@ NBATCH=6
 
 function GETDATA(){
     _OFFSET=$1
-    MAXOFFSET=$((_OFFSET+$NBATCH-1))
+    _NBATCH=$2
+    MAXOFFSET=$((_OFFSET+_NBATCH-1))
+    rm input.tsv &> /dev/null	    
     for ((TOFFSET=$_OFFSET;TOFFSET<=$MAXOFFSET;++TOFFSET));
     do
 	_NAME=$(echo "USE tier_0; SELECT name FROM gtr_organisations LIMIT 1 OFFSET $TOFFSET;" | mysql --defaults-extra-file=/Users/hep/Nesta/nesta_dataflow/db_config/tier-0.cnf | tail -n 1)
@@ -26,16 +28,41 @@ do
     #echo -n $OFFSET &> "out-id"
     #cat out-id
     #echo ""
-    GETDATA $OFFSET
+
     OFFSET=$((OFFSET+NBATCH))
     #zip env/gtr_extrainfo_aws.zip input.tsv
     #zip env/gtr_extrainfo_aws.zip out-id
-        
-    mv input.tsv gtr_$OFFSET
-    #cat gtr_$OFFSET    
+
+    
+    
+    line=$(cat source_scripts/not_done)
+    arr=($line)
+    for i in "${arr[@]}";
+    do
+	if [[ $i -eq $OFFSET ]];
+	then
+	    echo gtr_$OFFSET $i
+	    GETDATA $OFFSET 3
+	    mv input.tsv gtr_${OFFSET}_1
+
+	    GETDATA $((OFFSET+3)) 3
+	    mv input.tsv gtr_${OFFSET}_2
+
+	    aws s3 cp gtr_${OFFSET}_1 s3://tier-0-inputs --profile $PROFILE
+	    aws s3 cp gtr_${OFFSET}_2 s3://tier-0-inputs --profile $PROFILE
+	    
+	    rm gtr_${OFFSET}_1 &> /dev/null
+	    rm gtr_${OFFSET}_2 &> /dev/null
+
+	    break
+	fi
+    done
+    
+    
+    #cat gtr_$OFFSET
     #echo ""
-    aws s3 cp gtr_$OFFSET s3://tier-0-inputs --profile $PROFILE
-    rm gtr_$OFFSET &> /dev/null
+
+
     
     # Tidy up
     #rm input.tsv &> /dev/null

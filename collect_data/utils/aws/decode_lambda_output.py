@@ -4,10 +4,11 @@ from base64 import b64decode
 
 #----
 output = json.loads("".join(sys.argv[1:]))
-log = b64decode(output["LogResult"])
-
-#----
 print("\tExited with Status Code:\t",output["StatusCode"],"\n")
-print("Log output is:")
-for line in log.split(b"\n"):
-      print("\t>>> ",line)
+try:
+      log = b64decode(output["LogResult"])
+      print("Log output is:")
+      for line in log.split(b"\n"):
+            print("\t>>> ",line)      
+except:
+      pass

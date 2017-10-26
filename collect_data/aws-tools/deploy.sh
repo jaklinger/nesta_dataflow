@@ -168,7 +168,7 @@ function FUNCTION_EXISTS {
 function INVOKE_FUNCTION {
     echo "Invoking "$FUNCTION_NAME &&
     aws lambda invoke \
-	--invocation-type RequestResponse \
+	--invocation-type Event \
 	--region $REGION \
 	--function-name $FUNCTION_NAME \
 	--log-type Tail \
@@ -178,8 +178,7 @@ function INVOKE_FUNCTION {
     echo "Output from the handler:" &&
     cat $OUTLOG &&
     echo "" &&
-    rm $OUTLOG
-    
+    rm $OUTLOG    
     rm TMPOUT
 }
 

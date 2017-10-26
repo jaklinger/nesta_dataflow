@@ -2,6 +2,7 @@ from selenium import webdriver
 from selenium.webdriver.common.keys import Keys
 from selenium.common.exceptions import NoSuchElementException
 
+import math
 import json
 import os
 import sys
@@ -101,37 +102,48 @@ def get_project_info(b,project,org_url,org_name):
     return _data    
 
 def run(event,context):
+    # Set path
     sys.path.append(os.getcwd())
+    
+    # Read the input data
+    trigger_file = event["Records"][0]["s3"]["object"]
+    key = trigger_file["key"]
+    bucket = "tier-0-inputs"
+    print("Got file",key)
+    obj = s3.Bucket(bucket).Object(key)
+    input_data = obj.get()['Body'].read().decode('utf-8')
+    #print(input_data)
+    obj.delete()
 
-    print("starting driver")
+    #print("starting driver")
     driver = webdriver.PhantomJS(os.path.join(os.getcwd(),'phantomjs'),
                                  service_log_path='/tmp/ghostdriver.log',
                                  service_args=['--ssl-protocol=any'])
     driver.implicitly_wait(10)
 
+    # Save this for later
+    fetch100 = "?term=&selectedFacets=&fields=&type=&page=1&selectedSortableField=score&selectedSortOrder=DESC&fetchSize=100"
+    
     # Replace these with inputs
-    #org_name = "Melbourne School of Health Sciences"
-    #org_id = "123"
-    #org_url = "http://gtr.rcuk.ac.uk/organisation/C4145C68-58B8-441E-86DD-A4079B65B478"
-
     data = []
-    for line in open('input.tsv'):
+    for line in input_data.split("\n"):
+        if line == "":
+            continue
         org_name,org_id,org_url = line.replace("\n","").split("\t")
-        print('name',repr(org_name))
-        print('id',repr(org_id))
-        print('url',repr(org_url))
-        fetch100 = "?term=&selectedFacets=&fields=&type=&page=1&selectedSortableField=score&selectedSortOrder=DESC&fetchSize=100"
+        #print('name',repr(org_name))
+        #print('id',repr(org_id))
+        #print('url',repr(org_url))
 
         # Fetch top 100 results (never expect more than 100)
-        print("getting top url")
+        #print("getting top url")
         driver.get(org_url+fetch100)
 
         # Get all project links
-        print("Going to project link")    
+        #print("Going to project link")    
         projects  = driver.find_elements_by_css_selector("a[id^=resultProjectLink]")    
         project_texts = [dict(url=p.get_attribute("href"),text=p.text)
                          for p in projects]
-        print("got",len(projects),"projects")
+        #print("got",len(projects),"projects")
 
         # Generate results
         results=[get_project_info(driver,project,org_url,org_name)
@@ -151,12 +163,17 @@ def run(event,context):
     # Finished with the driver
     driver.quit() 
 
-    # MAYBE TEST A BASIC LAMBDA JOB FOR THIS BIT
-    # Copy to S3 bucket
+    # Copy to S3 bucket    
     bucket = s3.Bucket('tier-0')
-    with open(org_id+".json",'w') as f:
+    fname = "/tmp/"+key+".json"
+    with open(fname,'w') as f:
         json.dump(data,f,sort_keys=True,indent=4)
-        bucket.upload_fileobj(data,"gtr_"+org_id)
-
+    bucket.upload_file(fname,key)
+    print("Done",key)
+    
+    return {
+        'message' : "Done "+key
+    }
+    
 if __name__ == "__main__":
     run(None,None)

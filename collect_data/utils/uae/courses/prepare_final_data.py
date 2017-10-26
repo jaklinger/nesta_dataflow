@@ -9,6 +9,29 @@ def remove_dodgy_chars(text):
     return " ".join([_pattern.sub('',t)
                      for t in text.split()])
 
+def remove_acronyms(text,ignore=[]):
+    _text = []
+    just_skipped = False
+    for word in text.split():
+        if word.lower() in ignore:
+            just_skipped = False
+            _text.append(word)
+            continue
+        n_caps = sum(char.isupper() for char in word)
+        if n_caps > 1 and len(word) < 6:
+            just_skipped = True
+            continue
+        elif just_skipped and len(word) < 4 and n_caps > 0:
+            just_skipped = True
+            continue
+        just_skipped = False
+        if word.lower() == "degree":
+            continue
+        _text.append(word)
+    if len(_text) < 3:
+        return None
+    return " ".join(_text)
+
 def level_checker(query,levels=["bachelor","master","phd","diploma","doctor"]):
     # Check if the qualification type is in the query
     for lvl in levels:
@@ -58,6 +81,9 @@ def run(config):
                continue
         if "school of" in text.lower():
             continue
+        text = remove_acronyms(text,ignore=["phd","it"])
+        if text is None:
+            continue
         # Try to get the qualification from the text
         qual = get_qual_type(text,qual_map)
         # Otherwise, try to get the qualification from the URL
@@ -76,7 +102,8 @@ def run(config):
                    course_name=text,
                    qualification=qual)
         output.append(row)       
-    
+
+
     df = pd.DataFrame(output)
     df = df.drop_duplicates(["go_to_url","course_name"])
 

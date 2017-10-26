@@ -11,7 +11,7 @@ def read_all_results(config,input_db,input_table):
     input_table = config["parameters"][input_table]
     # Read DB
     db_cnf = URL(drivername="mysql+pymysql",
-                 query={'read_default_file':config["DEFAULT"][input_db]})
+                 query={'read_default_file':input_db})
     engine = create_engine(name_or_url=db_cnf)
     conn = engine.connect()
     md = MetaData(engine, reflect=True)

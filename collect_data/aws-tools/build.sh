@@ -6,9 +6,6 @@ function BASE_INSTALL(){
     yum update -y
     yum install -y \
 	sudo \
-	atlas-devel \
-	atlas-sse3-devel \
-	blas-devel \
 	gcc \
 	gcc-c++ \
 	lapack-devel \
@@ -19,6 +16,9 @@ function BASE_INSTALL(){
 	zip \
 	bzip2 \
 	which
+    	#atlas-devel \
+	#atlas-sse3-devel \
+	#blas-devel \
 }
 
 function GENERATE_VIRTUALENV() {
@@ -48,9 +48,9 @@ function INSTALL_REQUIREMENTS() {
 function COPY_SHARED_LIBS () {
     LIBDIR="$VIRTUAL_ENV/lib64/python3.6/site-packages/lib/"
     mkdir -p $LIBDIR || true
-    cp /usr/lib64/atlas/* $LIBDIR
+    #cp /usr/lib64/atlas/* $LIBDIR
     cp /usr/lib64/libquadmath.so.0 $LIBDIR
-    cp /usr/lib64/libgfortran.so.3 $LIBDIR
+    #cp /usr/lib64/libgfortran.so.3 $LIBDIR
 }
 
 function STRIP_VIRTUALENV () {

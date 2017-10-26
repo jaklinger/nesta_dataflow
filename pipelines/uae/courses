@@ -1,0 +1,6 @@
+	collect_data
+1. 		ucas_courses.config
+ .		wiki_quals.config
+ .		uae_courses.config [source_scripts/run_all_unis.sh]
+2.		uae_courses_in_uae
+3.		uae_courses_prepare_data
