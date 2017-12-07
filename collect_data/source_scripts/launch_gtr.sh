@@ -6,9 +6,9 @@ function GETDATA(){
     MAXOFFSET=$((_OFFSET+$NBATCH-1))
     for ((TOFFSET=$_OFFSET;TOFFSET<=$MAXOFFSET;++TOFFSET));
     do
-	_NAME=$(echo "USE tier_0; SELECT name FROM gtr_organisations LIMIT 1 OFFSET $TOFFSET;" | mysql --defaults-extra-file=/Users/hep/Nesta/nesta_dataflow/db_config/tier-0.cnf | tail -n 1)
-	_ID=$(echo "USE tier_0; SELECT id FROM gtr_organisations LIMIT 1 OFFSET $TOFFSET;" | mysql --defaults-extra-file=/Users/hep/Nesta/nesta_dataflow/db_config/tier-0.cnf| tail -n 1)
-	_URL=$(echo "USE tier_0; SELECT url FROM gtr_organisations LIMIT 1 OFFSET $TOFFSET;" | mysql --defaults-extra-file=/Users/hep/Nesta/nesta_dataflow/db_config/tier-0.cnf| tail -n 1)
+	_NAME=$(echo "USE tier_0; SELECT name FROM gtr_organisations LIMIT 1 OFFSET $TOFFSET;" | mysql --defaults-extra-file=/Users/$USER/Nesta/nesta_dataflow/db_config/tier-0.cnf | tail -n 1)
+	_ID=$(echo "USE tier_0; SELECT id FROM gtr_organisations LIMIT 1 OFFSET $TOFFSET;" | mysql --defaults-extra-file=/Users/$USER/Nesta/nesta_dataflow/db_config/tier-0.cnf| tail -n 1)
+	_URL=$(echo "USE tier_0; SELECT url FROM gtr_organisations LIMIT 1 OFFSET $TOFFSET;" | mysql --defaults-extra-file=/Users/$USER/Nesta/nesta_dataflow/db_config/tier-0.cnf| tail -n 1)
 	echo -e $_NAME"\t"$_ID"\t"$_URL >> input.tsv
     done    
 }
@@ -19,7 +19,7 @@ function GETDATA(){
 
 # Generate data file
 OFFSET=0
-RESULTS=$(echo "USE tier_0; SELECT count(*) FROM gtr_organisations;" | mysql --defaults-extra-file=/Users/hep/Nesta/nesta_dataflow/db_config/tier-0.cnf | tail -n 1)
+RESULTS=$(echo "USE tier_0; SELECT count(*) FROM gtr_organisations;" | mysql --defaults-extra-file=/Users/$USER/Nesta/nesta_dataflow/db_config/tier-0.cnf | tail -n 1)
 echo "There are $RESULTS results"
 while [[ $OFFSET -lt $RESULTS ]];
 do
@@ -36,6 +36,8 @@ do
     #echo ""
     aws s3 cp gtr_$OFFSET s3://tier-0-inputs --profile $PROFILE
     rm gtr_$OFFSET &> /dev/null
+
+    break
     
     # Tidy up
     #rm input.tsv &> /dev/null

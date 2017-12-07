@@ -10,6 +10,7 @@ bak*
 test*
 logs/
 *sv
+tmp_dir/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

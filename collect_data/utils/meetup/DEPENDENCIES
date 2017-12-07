@@ -1,0 +1,7 @@
+Order Dependency Code [Description] [Launcher]
+1 0 country_groups.py [country -> groups] [meetup_country_groups.config]
+2 1 groups_members.py [groups -> members] [meetup_groups_members.config]
+3 2 aws/members_groups [members -> groups] [launch_meetup_members.sh,meetup_members_awsreduce.config]
+4 3 aws/groups_details [groups -> group details] [launch_meetup_groups.sh,meetup_group_details_awsreduce.config]
+5 3 groups_events.py [groups -> events] []
+6 5 event_details.py [events -> event details] []

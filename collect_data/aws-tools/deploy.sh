@@ -6,7 +6,7 @@ REGION="eu-west-1"
 PROFILE="default"
 ROLE="nesta-innovation-mapping"
 BUCKET="nesta-datapipeline"
-alias aws=/Users/hep/.local/bin/aws
+alias aws=/Users/$USER/.local/bin/aws
 
 # Default values
 CONFIG=""
@@ -18,7 +18,7 @@ DRYRUN="NO"
 
 # Required values
 SCRIPT="REQUIRED"
-SCRIPTPATH="REQUIRED"
+AWSPATH="REQUIRED"
 
 # Command line arguments
 POSITIONAL=()
@@ -32,8 +32,8 @@ do
 	    shift # past argument
 	    shift # past value
 	    ;;
-	-sp|--scriptpath)
-	    SCRIPTPATH="$2"
+	-sp|--awspath)
+	    AWSPATH="$2"
 	    shift # past argument
 	    shift # past value
 	    ;;
@@ -72,11 +72,11 @@ done
 set -- "${POSITIONAL[@]}" # restore positional parameters     
 
 # Shame the user for not providing key parameters
-if [[ $SCRIPTPATH == "REQUIRED" ]];
+if [[ $AWSPATH == "REQUIRED" ]];
 then
     if [[ $REFRESH == "YES" ]];
     then
-	echo -e "Error:\t --scriptpath parameter not provided, but --refresh was specified."
+	echo -e "Error:\t --awspath parameter not provided, but --refresh was specified."
 	return 1
     fi
 fi
@@ -86,9 +86,12 @@ then
     return 1
 fi
 
+# Set full script path
+SCRIPTPATH=${AWSPATH}/${SCRIPT}/map/
+
 # My settings
 FUNCTION_NAME="DataPipeline-${SCRIPT}"
-HANDLER="${SCRIPT}.run"
+HANDLER="map.run"
 DESCRIPTION="${DESCRIPTION}"
 
 # My organisation's settings
@@ -245,10 +248,12 @@ function CREATE_ENVIRONMENT(){
     mv $SCRIPTPATH/venv.zip $ENVDIR/$ENVZIP    
     rm $SCRIPTPATH/full-venv.zip 
     rm $SCRIPTPATH/build.sh
-    rm $SCRIPTPATH/before.sh &> /dev/null
-    rm $SCRIPTPATH/after.sh &> /dev/null
+    if [[ $CONFIG != "" ]];
+    then
+	rm $SCRIPTPATH/before.sh &> /dev/null
+	rm $SCRIPTPATH/after.sh &> /dev/null
+    fi
 }
-
 
 #__________________________
 # Deploy the environment to S3
@@ -282,6 +287,7 @@ then
     FRESULT="NULL"
     
     # Prepare the zip file and create the function
+    mkdir $ENVDIR &> /dev/null
     ls $ENVDIR/$ENVZIP &> /dev/null
     if [ $? -ne 0 ] || [[ $REFRESH_ENV == "YES" ]];
     then

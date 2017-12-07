@@ -54,16 +54,19 @@ function COPY_SHARED_LIBS () {
 }
 
 function STRIP_VIRTUALENV () {
-    echo "venv original size $(du -sh $VIRTUAL_ENV | cut -f1)"
-    find $VIRTUAL_ENV/lib64/python3.6/site-packages/ -name "*.so" | xargs strip
-    echo "venv stripped size $(du -sh $VIRTUAL_ENV | cut -f1)"
-
+    if [[ -n $(find $VIRTUAL_ENV/lib64/python3.6/site-packages/ -name "*.so") ]];
+    then
+	echo "venv original size $(du -sh $VIRTUAL_ENV | cut -f1)"
+	find $VIRTUAL_ENV/lib64/python3.6/site-packages/ -name "*.so" | xargs strip
+	echo "venv stripped size $(du -sh $VIRTUAL_ENV | cut -f1)"
+    fi
+	
     pushd $VIRTUAL_ENV/lib64/python3.6/site-packages/ && zip -r -9 -q /outputs/venv.zip * ; popd
     pushd $VIRTUAL_ENV/lib/python3.6/site-packages/ && zip -rg -9 -q /outputs/venv.zip * ; popd    
     echo "site-packages compressed size $(du -sh /outputs/venv.zip | cut -f1)"
 
     pushd $VIRTUAL_ENV && zip -r -q /outputs/full-venv.zip * ; popd
-    echo "venv compressed size $(du -sh /outputs/full-venv.zip | cut -f1)"
+    echo "venv compressed size $(du -sh /outputs/full-venv.zip | cut -f1)"    
 }
 
 function EXECUTE_IF_EXISTS () {
@@ -82,3 +85,4 @@ INSTALL_REQUIREMENTS
 COPY_SHARED_LIBS
 EXECUTE_IF_EXISTS after.sh
 STRIP_VIRTUALENV
+echo "Done build!"

@@ -6,8 +6,6 @@ dcc
 
 from bs4 import BeautifulSoup
 import logging
-import pandas as pd
-
 import requests
 import time
 
@@ -15,8 +13,9 @@ import time
 from utils.common.browser import SelfClosingBrowser
 from utils.common.datapipeline import DataPipeline
 
-''''''
-def get_field_from_box(field,box):
+
+def get_field_from_box(field, box):
+    ''''''    
     for row in box.find("ul"):
         # Accept rows containing spans
         try:
@@ -30,10 +29,11 @@ def get_field_from_box(field,box):
         return spans[1].text
     raise ValueError("Could not find field "+field)
 
-'''
-Returns response if no ConnectionError exception
-'''
-def get_response_from_url(url,max_tries=3):
+
+def get_response_from_url(url, max_tries=3):
+    '''
+    Returns response if no ConnectionError exception
+    '''
     n_tries = 0
     while True:
         n_tries += 1
@@ -45,13 +45,12 @@ def get_response_from_url(url,max_tries=3):
         except requests.exceptions.ConnectionError as err:
             if n_tries == max_tries:
                 raise err
-            logging.warning("Connection error to %s",(url))
+            logging.warning("Connection error to %s", (url))
             time.sleep(10)
 
 
-''''''
 def run(config):
-
+    ''''''
     # Fire up a browser at the top url
     top_url = config["parameters"]["src"]
     cat_pages = {}
@@ -59,6 +58,7 @@ def run(config):
         # Scrape pages until no page found
         found_page = True
         while found_page:
+            print("Found page")
             # Get the category web pages
             html_list = b.find_element_by_class_name("dcci_cat")
             list_items = html_list.find_elements_by_tag_name("li")
@@ -67,35 +67,32 @@ def run(config):
                 cat_pages[link.text] = link.get_attribute('href')
             # Click the next page and get the table
             found_page = b.find_and_click_link("Next »")
-            
     # Process each category's URL to find companies
     data = {}
-    for cat,url in cat_pages.items():
+    for cat, url in cat_pages.items():
         r = get_response_from_url(url)
         # No bad statuses
         if r.status_code != 200:
-            continue        
+            continue
         # Loop over text boxes in the soup
-        soup = BeautifulSoup(r.text,"lxml")
-        boxes = soup.find_all("div",class_="result_box")
+        soup = BeautifulSoup(r.text, "lxml")
+        boxes = soup.find_all("div", class_="result_box")
         for box in boxes:
             # Get the company name
-            title_box = box.find("div",class_="title")
+            title_box = box.find("div", class_="title")
             title_link = title_box.find("a")
             company_name = title_link.text
 
             # Get the website
-            company_url = get_field_from_box("Website",box)
-            city = get_field_from_box("City",box)
-                
+            company_url = get_field_from_box("Website", box)
+            city = get_field_from_box("City", box)                
             # Check whether this URL has been processed before
             if company_name not in data:
-                data[company_name] = dict(category=[cat],url=company_url,
-                                          city=city,company_name=company_name)
+                data[company_name] = dict(category=[cat], url=company_url,
+                                          city=city, company_name=company_name)
             else:
-                data[company_name]["category"].append(cat)    
-    logging.info("\tGot %s rows",len(data))
-    
+                data[company_name]["category"].append(cat)
+    logging.info("\tGot %s rows", len(data))
     # Write data
     logging.info("\tWriting to table")
     with DataPipeline(config) as dp:

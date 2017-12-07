@@ -7,3 +7,4 @@ source aws-tools/deploy.sh --script
 --refresh		   Flag to indicate that python script has local modifications that should be included in the latest run
 --refreshenv		   Flag to indicate that the package environment should be updated (include this if new packages have been imported or installed)
 --dryrun		   Do not invoke the AWS Lambda function after creation
+
